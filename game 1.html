@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vball Game - Top View</title>
+    <style>
+        body {
+            text-align: center;
+            background: rgb(56, 85, 96);
+        }
+        canvas {
+            background: lightgreen;
+            display: block;
+            margin: auto;
+        }
+        #score {
+            font-size: 24px;
+            margin-top: 20px;
+            color: white;
+        }
+        #message {
+            font-size: 18px;
+            margin-top: 10px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: white;">Vball Game - Top View</h1>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <div id="score">Player 1: 0 | Player 2: 0</div>
+    <div id="message">Press Space to Serve | Press R to Restart</div>
+    
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreDisplay = document.getElementById("score");
+        const messageDisplay = document.getElementById("message");
+
+        const player1 = { x: 200, y: 350, width: 80, height: 10, dx: 0, score: 0 };
+        const player2 = { x: 600, y: 350, width: 80, height: 10, dx: 0, score: 0 };
+        let ball = { x: 400, y: 200, radius: 15, dx: 0, dy: 0 };
+
+        const keys = {};
+        let servingPlayer = 1;
+        let gameActive = false;
+        const maxScore = 5;
+
+        function drawRect(player) {
+            ctx.fillStyle = "blue";
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
+
+        function drawBall() {
+            let gradient = ctx.createRadialGradient(ball.x, ball.y, 5, ball.x, ball.y, ball.radius);
+            gradient.addColorStop(0, "white");
+            gradient.addColorStop(1, "red");
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawMidLine() {
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+        }
+
+        function resetGame() {
+            player1.score = 0;
+            player2.score = 0;
+            servingPlayer = 1;
+            updateScore();
+            resetBall();
+        }
+
+        function resetBall() {
+            ball.x = 400;
+            ball.y = 200;
+            ball.dx = 0;
+            ball.dy = 0;
+            gameActive = false;
+            messageDisplay.textContent = "Press Space to Serve";
+        }
+
+        function updateScore() {
+            scoreDisplay.textContent = `Player 1: ${player1.score} | Player 2: ${player2.score}`;
+        }
+
+        function checkGameOver() {
+            if (player1.score >= maxScore) {
+                messageDisplay.textContent = "Game Over! Player 1 Wins! Press R to Restart";
+                gameActive = false;
+                return true;
+            } else if (player2.score >= maxScore) {
+                messageDisplay.textContent = "Game Over! Player 2 Wins! Press R to Restart";
+                gameActive = false;
+                return true;
+            }
+            return false;
+        }
+
+        function serveBall() {
+            if (!gameActive && keys[" "]) {
+                gameActive = true;
+                ball.dy = -4;
+                ball.dx = servingPlayer === 1 ? 3 : -3;
+                messageDisplay.textContent = "";
+            }
+        }
+
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawMidLine();
+            drawRect(player1);
+            drawRect(player2);
+            drawBall();
+
+            if (gameActive) {
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+
+                if (ball.y - ball.radius < 0) {
+                    ball.dy *= -1;
+                }
+
+                if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
+                    ball.dx *= -1;
+                }
+
+                if (ball.y + ball.radius >= canvas.height) {
+                    if (ball.x < canvas.width / 2) {
+                        player2.score++;
+                        servingPlayer = 2;
+                    } else {
+                        player1.score++;
+                        servingPlayer = 1;
+                    }
+                    updateScore();
+                    if (!checkGameOver()) {
+                        resetBall();
+                    }
+                }
+
+                if (keys["a"] && player1.x > 0) player1.x -= 5;
+                if (keys["d"] && player1.x < canvas.width / 2 - player1.width) player1.x += 5;
+                if (keys["ArrowLeft"] && player2.x > canvas.width / 2) player2.x -= 5;
+                if (keys["ArrowRight"] && player2.x < canvas.width - player2.width) player2.x += 5;
+
+                if (
+                    ball.y + ball.radius >= player1.y &&
+                    ball.x > player1.x &&
+                    ball.x < player1.x + player1.width
+                ) {
+                    ball.dy = -Math.abs(ball.dy);
+                    ball.dx += (Math.random() - 0.5) * 2;
+                } else if (
+                    ball.y + ball.radius >= player2.y &&
+                    ball.x > player2.x &&
+                    ball.x < player2.x + player2.width
+                ) {
+                    ball.dy = -Math.abs(ball.dy);
+                    ball.dx += (Math.random() - 0.5) * 2;
+                }
+            } else {
+                serveBall();
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        window.addEventListener("keydown", (e) => {
+            keys[e.key] = true;
+            if (e.key === "r" || e.key === "R") {
+                resetGame();
+            }
+        });
+
+        window.addEventListener("keyup", (e) => {
+            keys[e.key] = false;
+        });
+
+        update();
+    </script>
+</body>
+</html>
